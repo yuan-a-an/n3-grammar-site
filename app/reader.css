@@ -873,6 +873,13 @@ button {
   margin-top: 0;
 }
 
+.grammar-media-actions {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 8px;
+}
+
 .mobile-audio-panel {
   overflow: hidden;
   margin: 12px 0 24px;
@@ -985,6 +992,48 @@ button {
   color: var(--muted);
   cursor: not-allowed;
   opacity: .62;
+}
+
+.grammar-video-button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 11px;
+  border: 1px solid color-mix(in srgb, var(--gold) 52%, var(--line));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--gold) 10%, var(--surface));
+  color: var(--gold);
+  font-size: 10px;
+  font-weight: 800;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: transform .18s, border-color .18s, background .18s;
+}
+
+.grammar-video-button:hover:not(:disabled) {
+  border-color: var(--gold);
+  transform: translateY(-1px);
+}
+
+.grammar-video-button.is-open {
+  border-color: var(--red);
+  background: color-mix(in srgb, var(--red) 11%, var(--surface));
+  color: var(--red);
+}
+
+.grammar-video-button:disabled {
+  border-style: dashed;
+  background: transparent;
+  color: var(--muted);
+  cursor: not-allowed;
+  opacity: .62;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .grammar-video-button {
+    display: none;
+  }
 }
 
 .audio-engine {
@@ -1268,6 +1317,11 @@ button {
   }
 
 
+  .grammar-media-actions {
+    flex-wrap: wrap;
+  }
+
+
   .mobile-audio-panel {
     margin-top: 12px;
   }
@@ -1309,6 +1363,7 @@ button {
   .complete-button,
   .video-study,
   .grammar-audio-button,
+  .grammar-video-button,
   .audio-now-playing,
   .audio-engine,
   .lesson-footer {

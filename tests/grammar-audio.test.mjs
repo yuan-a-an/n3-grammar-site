@@ -81,6 +81,9 @@ test("grammar audio uses the original Bilibili player without publishing copied 
   assert.match(reader, /className="mobile-audio-frame"/);
   assert.match(reader, /navigator\.maxTouchPoints/);
   assert.match(reader, /请在播放器内点击/);
+  assert.match(reader, /activeVideoKey/);
+  assert.match(reader, /setActiveInlineVideo/);
+  assert.match(reader, /看板书/);
   assert.match(reader, /听本组讲解/);
   assert.match(reader, /听讲解 · 待复核/);
   assert.match(reader, /暂无讲解/);
