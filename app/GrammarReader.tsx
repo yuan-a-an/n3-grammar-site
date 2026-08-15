@@ -161,6 +161,10 @@ function audioPlayerUrl(video: VideoPart, start: number) {
   return `https://player.bilibili.com/player.html?isOutside=true&bvid=${bilibiliBvid}&cid=${video.cid}&p=${video.page}&autoplay=1&danmaku=0&muted=0&t=${Math.floor(start)}`;
 }
 
+function mobilePlayerUrl(video: VideoPart, start: number) {
+  return `https://player.bilibili.com/player.html?isOutside=true&bvid=${bilibiliBvid}&cid=${video.cid}&p=${video.page}&autoplay=0&danmaku=0&t=${Math.floor(start)}`;
+}
+
 function formatTimestamp(seconds: number) {
   const minutes = Math.floor(seconds / 60);
   return `${minutes}:${String(Math.floor(seconds % 60)).padStart(2, "0")}`;
@@ -418,10 +422,12 @@ function InlineText({ text }: { text: string }) {
 function MarkdownPage({
   page,
   activeAudioKey,
+  useInlinePlayer,
   onToggleAudio,
 }: {
   page: PageSection;
   activeAudioKey: string | null;
+  useInlinePlayer: boolean;
   onToggleAudio: (key: string, cue: GrammarAudioCue, label: string) => void;
 }) {
   return (
@@ -450,26 +456,53 @@ function MarkdownPage({
             const cueKey = grammarAudioCueKey(page.pdfPage, heading);
             const cue = grammarAudioCues[cueKey];
             const isPlaying = activeAudioKey === cueKey;
+            const video = cue ? videoParts.get(cue.videoPage) : undefined;
             return (
-              <div className="grammar-heading" key={index}>
-                <h3><InlineText text={heading} /></h3>
-                <button
-                  type="button"
-                  className={"grammar-audio-button " + (isPlaying ? "is-playing" : "")}
-                  disabled={!cue}
-                  onClick={() => cue && onToggleAudio(cueKey, cue, heading)}
-                  title={cue
-                    ? cue.kind === "section"
-                      ? "老师将相近语法放在同一段讲解；此时间点建议后续复核"
-                      : cue.kind === "review"
-                        ? "这一项的转写不够清楚，已保留当前最佳切点并标记待复核"
-                      : `播放周业繁 P${cue.videoPage} ${formatTimestamp(cue.start)} 起的讲解`
-                    : "配套视频未提供这一专项的讲解"}
-                  aria-label={cue ? `${isPlaying ? "停止" : "播放"}${heading}的讲解` : `${heading}暂无配套讲解`}
-                >
-                  <span aria-hidden="true">{isPlaying ? "■" : "▶"}</span>
-                  {cue ? isPlaying ? "停止" : cue.kind === "section" ? "听本组讲解" : cue.kind === "review" ? "听讲解 · 待复核" : "听讲解" : "暂无讲解"}
-                </button>
+              <div className="grammar-heading-block" key={index}>
+                <div className="grammar-heading">
+                  <h3><InlineText text={heading} /></h3>
+                  <button
+                    type="button"
+                    className={"grammar-audio-button " + (isPlaying ? "is-playing" : "")}
+                    disabled={!cue}
+                    onClick={() => cue && onToggleAudio(cueKey, cue, heading)}
+                    title={cue
+                      ? cue.kind === "section"
+                        ? "老师将相近语法放在同一段讲解；此时间点建议后续复核"
+                        : cue.kind === "review"
+                          ? "这一项的转写不够清楚，已保留当前最佳切点并标记待复核"
+                          : `播放周业繁 P${cue.videoPage} ${formatTimestamp(cue.start)} 起的讲解`
+                      : "配套视频未提供这一专项的讲解"}
+                    aria-label={cue ? `${isPlaying ? "停止" : "播放"}${heading}的讲解` : `${heading}暂无配套讲解`}
+                  >
+                    <span aria-hidden="true">{isPlaying ? "■" : "▶"}</span>
+                    {cue ? isPlaying ? useInlinePlayer ? "收起播放器" : "停止" : cue.kind === "section" ? "听本组讲解" : cue.kind === "review" ? "听讲解 · 待复核" : "听讲解" : "暂无讲解"}
+                  </button>
+                </div>
+                {isPlaying && useInlinePlayer && cue && video && (
+                  <section className="mobile-audio-panel" aria-label={`${heading}的讲解播放器`}>
+                    <header>
+                      <div>
+                        <small>手机／平板播放 · P{video.page} {formatTimestamp(cue.start)}</small>
+                        <b>{heading}</b>
+                      </div>
+                      <button type="button" onClick={() => onToggleAudio(cueKey, cue, heading)} aria-label="收起讲解播放器">收起</button>
+                    </header>
+                    <div className="mobile-audio-frame">
+                      <iframe
+                        src={mobilePlayerUrl(video, cue.start)}
+                        title={`周业繁讲解：${heading}`}
+                        allow="autoplay; fullscreen; picture-in-picture"
+                        allowFullScreen
+                        referrerPolicy="strict-origin-when-cross-origin"
+                      />
+                    </div>
+                    <footer>
+                      <span>请在播放器内点击 ▶，将从本条语法的讲解位置开始。</span>
+                      <a href={bilibiliUrl(video)} target="_blank" rel="noreferrer">在B站打开 ↗</a>
+                    </footer>
+                  </section>
+                )}
               </div>
             );
           }
@@ -510,6 +543,19 @@ export default function GrammarReader() {
   const [dark, setDark] = useState(false);
   const [activeVideoPage, setActiveVideoPage] = useState<number | null>(null);
   const [activeAudio, setActiveAudio] = useState<ActiveAudio | null>(null);
+
+  const [useInlinePlayer, setUseInlinePlayer] = useState(false);
+
+  useEffect(() => {
+    const coarsePointer = window.matchMedia("(pointer: coarse)");
+    const updatePlaybackMode = () => {
+      setUseInlinePlayer(coarsePointer.matches || navigator.maxTouchPoints > 1);
+    };
+
+    updatePlaybackMode();
+    coarsePointer.addEventListener("change", updatePlaybackMode);
+    return () => coarsePointer.removeEventListener("change", updatePlaybackMode);
+  }, []);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -553,14 +599,14 @@ export default function GrammarReader() {
   }, [dark]);
 
   useEffect(() => {
-    if (!activeAudio) return;
+    if (!activeAudio || useInlinePlayer) return;
     const instance = activeAudio.instance;
     const remaining = Math.max(1, activeAudio.cue.end - activeAudio.cue.start) * 1000;
     const timeout = window.setTimeout(() => {
       setActiveAudio((current) => current?.instance === instance ? null : current);
     }, remaining);
     return () => window.clearTimeout(timeout);
-  }, [activeAudio]);
+  }, [activeAudio, useInlinePlayer]);
 
   const selected = units.find((unit) => unit.id === selectedId) ?? units[0];
   const currentModule = selected.modules.find((item) => item.key === activeModule) ?? selected.modules[0];
@@ -759,6 +805,7 @@ export default function GrammarReader() {
               page={page}
               key={page.pdfPage}
               activeAudioKey={activeAudio?.key ?? null}
+              useInlinePlayer={useInlinePlayer}
               onToggleAudio={toggleGrammarAudio}
             />
           ))}
@@ -773,7 +820,7 @@ export default function GrammarReader() {
         </article>
       </main>
 
-      {activeAudio && (() => {
+      {activeAudio && !useInlinePlayer && (() => {
         const video = videoParts.get(activeAudio.cue.videoPage);
         if (!video) return null;
         return (
