@@ -366,6 +366,39 @@ button {
   font-size: 11px;
 }
 
+.player-mode-control {
+  display: flex;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: var(--surface);
+}
+
+.player-mode-control button {
+  min-width: 38px;
+  padding: 7px 10px;
+  border: 0;
+  border-right: 1px solid var(--line);
+  background: transparent;
+  color: var(--muted);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.player-mode-control button:last-child {
+  border-right: 0;
+}
+
+.player-mode-control button:hover {
+  background: var(--surface-soft);
+  color: var(--green);
+}
+
+.player-mode-control button.active {
+  background: var(--green-soft);
+  color: var(--green);
+}
+
 .lesson-wrap {
   width: min(940px, calc(100% - 70px));
   margin: 0 auto;

@@ -10,6 +10,8 @@ import {
 
 type ModuleKey = "overview" | "grammar" | "practice" | "focus" | "answers";
 
+type PlayerModePreference = "auto" | "desktop" | "touch";
+
 type VideoPart = {
   page: number;
   title: string;
@@ -566,16 +568,20 @@ export default function GrammarReader() {
   const [activeAudio, setActiveAudio] = useState<ActiveAudio | null>(null);
   const [activeInlineVideo, setActiveInlineVideo] = useState<ActiveAudio | null>(null);
 
-  const [useInlinePlayer, setUseInlinePlayer] = useState(false);
+  const [autoUseInlinePlayer, setAutoUseInlinePlayer] = useState(false);
+  const [playerModePreference, setPlayerModePreference] = useState<PlayerModePreference>("auto");
 
   useEffect(() => {
     const coarsePointer = window.matchMedia("(pointer: coarse)");
     // Touch-screen laptops report a coarse pointer and multiple touch points
     // even when the person is actually using a mouse or trackpad. If any
     // fine pointer is available at all, trust it over the touch signals.
+    // Some corporate/VDI laptops still report no fine pointer at all despite
+    // a real mouse being in use, which is why this is only the "auto"
+    // default and people can override it below (see playerModePreference).
     const finePointer = window.matchMedia("(any-pointer: fine)");
     const updatePlaybackMode = () => {
-      setUseInlinePlayer(!finePointer.matches && (coarsePointer.matches || navigator.maxTouchPoints > 1));
+      setAutoUseInlinePlayer(!finePointer.matches && (coarsePointer.matches || navigator.maxTouchPoints > 1));
     };
 
     updatePlaybackMode();
@@ -587,12 +593,15 @@ export default function GrammarReader() {
     };
   }, []);
 
+  const useInlinePlayer = playerModePreference === "auto" ? autoUseInlinePlayer : playerModePreference === "touch";
+
   useEffect(() => {
     const controller = new AbortController();
     const restoreFrame = window.requestAnimationFrame(() => {
       const storedUnit = localStorage.getItem("n3-current-unit");
       const storedDone = localStorage.getItem("n3-completed");
       const storedTheme = localStorage.getItem("n3-theme");
+      const storedPlayerMode = localStorage.getItem("n3-player-mode");
       if (storedUnit && units.some((unit) => unit.id === storedUnit)) setSelectedId(storedUnit);
       if (storedDone) {
         try {
@@ -602,6 +611,9 @@ export default function GrammarReader() {
         }
       }
       if (storedTheme === "dark") setDark(true);
+      if (storedPlayerMode === "auto" || storedPlayerMode === "desktop" || storedPlayerMode === "touch") {
+        setPlayerModePreference(storedPlayerMode);
+      }
     });
 
     const contentUrl = new URL("content.md", new URL(".", window.location.href));
@@ -689,6 +701,13 @@ export default function GrammarReader() {
       : { key, cue, label, instance: Date.now() });
   }
 
+  function choosePlayerMode(mode: PlayerModePreference) {
+    setPlayerModePreference(mode);
+    localStorage.setItem("n3-player-mode", mode);
+    setActiveAudio(null);
+    setActiveInlineVideo(null);
+  }
+
   function toggleComplete() {
     setCompleted((previous) => {
       const next = new Set(previous);
@@ -756,6 +775,38 @@ export default function GrammarReader() {
               <button onClick={() => setFontScale((value) => Math.max(.88, value - .08))}>A−</button>
               <button onClick={() => setFontScale(1)}>A</button>
               <button onClick={() => setFontScale((value) => Math.min(1.24, value + .08))}>A＋</button>
+            </div>
+            <div className="player-mode-control" role="radiogroup" aria-label="讲解播放方式">
+              <button
+                type="button"
+                role="radio"
+                aria-checked={playerModePreference === "auto"}
+                className={playerModePreference === "auto" ? "active" : ""}
+                onClick={() => choosePlayerMode("auto")}
+                title="根据设备自动判断，多数情况下无需更改"
+              >
+                自动
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={playerModePreference === "desktop"}
+                className={playerModePreference === "desktop" ? "active" : ""}
+                onClick={() => choosePlayerMode("desktop")}
+                title="始终显示「听讲解」与「看板书」两个按钮（部分笔记本/远程桌面会被误判为触屏，可在这里强制切换）"
+              >
+                电脑
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={playerModePreference === "touch"}
+                className={playerModePreference === "touch" ? "active" : ""}
+                onClick={() => choosePlayerMode("touch")}
+                title="始终使用手机／平板的内嵌播放面板"
+              >
+                手机
+              </button>
             </div>
             <button className="theme-button" onClick={() => setDark((value) => !value)}>{dark ? "浅色" : "夜读"}</button>
           </div>
