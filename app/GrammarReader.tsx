@@ -640,6 +640,14 @@ export default function GrammarReader() {
     localStorage.setItem("n3-theme", dark ? "dark" : "light");
   }, [dark]);
 
+  // The CSS "hide the board-view button on touch devices" rule reads this
+  // attribute instead of re-testing pointer/hover media features on its own,
+  // so it always agrees with the same auto-detection + manual override used
+  // above instead of a second, independent (and conflicting) hardware check.
+  useEffect(() => {
+    document.documentElement.dataset.playerMode = useInlinePlayer ? "touch" : "desktop";
+  }, [useInlinePlayer]);
+
   useEffect(() => {
     if (!activeAudio || useInlinePlayer) return;
     const instance = activeAudio.instance;

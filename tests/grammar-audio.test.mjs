@@ -83,6 +83,7 @@ test("grammar audio uses the original Bilibili player without publishing copied 
   assert.match(reader, /any-pointer: fine/);
   assert.match(reader, /"n3-player-mode"/);
   assert.match(reader, /function choosePlayerMode/);
+  assert.match(reader, /dataset\.playerMode/);
   assert.match(reader, /请在播放器内点击/);
   assert.match(reader, /activeVideoKey/);
   assert.match(reader, /setActiveInlineVideo/);
@@ -90,4 +91,11 @@ test("grammar audio uses the original Bilibili player without publishing copied 
   assert.match(reader, /听本组讲解/);
   assert.match(reader, /听讲解 · 待复核/);
   assert.match(reader, /暂无讲解/);
+});
+
+test("the board-view button's CSS follows the same mode the toggle sets, not a second hardware check", async () => {
+  const css = await read("app/reader.css");
+
+  assert.match(css, /html\[data-player-mode="touch"\]\s*\.grammar-video-button/);
+  assert.doesNotMatch(css, /@media\s*\(hover:\s*none\)/);
 });

@@ -1063,10 +1063,8 @@ button {
   opacity: .62;
 }
 
-@media (hover: none), (pointer: coarse) {
-  .grammar-video-button {
-    display: none;
-  }
+html[data-player-mode="touch"] .grammar-video-button {
+  display: none;
 }
 
 .audio-engine {
