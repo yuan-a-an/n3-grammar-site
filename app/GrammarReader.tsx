@@ -570,13 +570,21 @@ export default function GrammarReader() {
 
   useEffect(() => {
     const coarsePointer = window.matchMedia("(pointer: coarse)");
+    // Touch-screen laptops report a coarse pointer and multiple touch points
+    // even when the person is actually using a mouse or trackpad. If any
+    // fine pointer is available at all, trust it over the touch signals.
+    const finePointer = window.matchMedia("(any-pointer: fine)");
     const updatePlaybackMode = () => {
-      setUseInlinePlayer(coarsePointer.matches || navigator.maxTouchPoints > 1);
+      setUseInlinePlayer(!finePointer.matches && (coarsePointer.matches || navigator.maxTouchPoints > 1));
     };
 
     updatePlaybackMode();
     coarsePointer.addEventListener("change", updatePlaybackMode);
-    return () => coarsePointer.removeEventListener("change", updatePlaybackMode);
+    finePointer.addEventListener("change", updatePlaybackMode);
+    return () => {
+      coarsePointer.removeEventListener("change", updatePlaybackMode);
+      finePointer.removeEventListener("change", updatePlaybackMode);
+    };
   }, []);
 
   useEffect(() => {
